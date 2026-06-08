@@ -3,21 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Αρχική Σελίδα - Restaurant Review App</title>
-    <link rel="stylesheet" href="styles/index.css">
+    <title>Περιήγηση - Restaurant Review App</title>
+    <link rel="stylesheet" href="styles/dashboard.css">
 </head>
 <body>
 
-<div class="login-container" style="max-width: 600px;">
-    <h2>Καλώς ορίσατε στην εφαρμογή!</h2>
-    <p>Συνδεθήκατε με επιτυχία στο σύστημα αξιολόγησης εστιατορίων.</p>
+<nav class="navbar">
+    <div class="navbar-container">
+        <div class="logo">🍽️ RestaurantReview</div>
+        <div class="nav-right">
+            <span style="margin-right: 20px;">Λειτουργία Επισκέπτη</span>
+            <a href="index.html" class="btn-logout" style="text-decoration: none;">Σύνδεση</a>
+        </div>
+    </div>
+</nav>
 
-    <hr style="border: 0; height: 1px; background: #cccccc; margin: 20px 0;">
+<div class="container">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="menu-section">
+            <h3>Μενού</h3>
+            <button class="menu-item active" onclick="showSection('browse')">
+                🔍 Περιήγηση Εστιατορίων
+            </button>
+            <button class="menu-item" onclick="window.location.href='index.html'">
+                🔐 Σύνδεση
+            </button>
+        </div>
+    </div>
 
-    <a href="index.html" class="btn-link-container">
-        <button class="btn-guest" style="background-color: #dc3545;">Αποσύνδεση (Logout)</button>
-    </a>
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Browse Section -->
+        <section id="browse-section" class="section active">
+            <h2>Εστιατόρια με Κατάταξη</h2>
+            
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Αναζήτηση εστιατορίου ή τοποθεσίας..." 
+                       onkeyup="searchRestaurants()">
+                <button onclick="searchRestaurants()" class="btn-search">Αναζήτηση</button>
+            </div>
+
+            <div id="restaurants-list" class="restaurants-grid">
+                <!-- Restaurants will be loaded here -->
+                <p>Φόρτωση εστιατορίων...</p>
+            </div>
+        </section>
+    </div>
 </div>
+
+<!-- Restaurant Detail Modal -->
+<div id="restaurantModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script>
+// Global state
+let currentUser = null;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadRestaurants();
+});
+
+function showSection(sectionName) {
+    document.querySelectorAll('.section').forEach(section => {
+        section.classList.remove('active');
+    });
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    const sectionElement = document.getElementById(`${sectionName}-section`);
+    if (sectionElement) {
+        sectionElement.classList.add('active');
+    }
+
+    event.target.classList.add('active');
+}
+
+function loadRestaurants(searchTerm = '') {
+    const url = searchTerm ? `/api/restaurants?search=${encodeURIComponent(searchTerm)}` : '/api/restaurants';
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            renderRestaurantsList(data, document.getElementById('restaurants-list'));
+        })
+        .catch(error => {
+            console.error('Error loading restaurants:', error);
+            document.getElementById('restaurants-list').innerHTML = '<p>Σφάλμα κατά την φόρτωση</p>';
+        });
+}
+
+function renderRestaurantsList(restaurants, container) {
+    if (!restaurants || restaurants.length === 0) {
+        container.innerHTML = '<p>Δεν βρέθηκαν εστιατόρια</p>';
+        return;
+    }
+
+    container.innerHTML = restaurants.map(restaurant => `
+        <div class="restaurant-card">
+            <h3>${restaurant.name}</h3>
+            <div class="location">📍 ${restaurant.location}</div>
+            <div class="rating">
+                <span class="stars">${generateStars(restaurant.averageRating)}</span>
+                <span>${restaurant.averageRating.toFixed(1)}/5.0</span>
+                <span style="color: #999; font-size: 0.9rem;">(${restaurant.reviewCount} κριτικές)</span>
+            </div>
+            ${restaurant.cuisineType ? `<span class="cuisine">${restaurant.cuisineType}</span>` : ''}
+            <div class="actions">
+                <button class="btn-small btn-view" onclick="showRestaurantDetail(${restaurant.id})">Προβολή</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function searchRestaurants() {
+    const searchTerm = document.getElementById('searchInput').value;
+    loadRestaurants(searchTerm);
+}
+
+function showRestaurantDetail(restaurantId) {
+    fetch(`/api/restaurants/${restaurantId}`)
+        .then(response => response.json())
+        .then(restaurant => {
+            fetch(`/api/reviews/restaurant/${restaurantId}`)
+                .then(response => response.json())
+                .then(reviews => {
+                    displayRestaurantModal(restaurant, reviews);
+                });
+        })
+        .catch(error => {
+            console.error('Error loading restaurant:', error);
+            alert('Σφάλμα κατά την φόρτωση του εστιατορίου');
+        });
+}
+
+function displayRestaurantModal(restaurant, reviews) {
+    const modal = document.getElementById('restaurantModal');
+    const modalBody = document.getElementById('modalBody');
+
+    let reviewsHTML = reviews.length > 0 ? reviews.map(review => `
+        <div class="review-item">
+            <div class="review-header">
+                <span class="reviewer-name">${review.criticName}</span>
+                <span class="review-rating">${generateStars(review.rating)}</span>
+            </div>
+            <div class="review-date">${new Date(review.createdDate).toLocaleDateString('el-GR')}</div>
+            ${review.reviewText ? `<p>${review.reviewText}</p>` : ''}
+        </div>
+    `).join('') : '<p>Δεν υπάρχουν κριτικές ακόμα</p>';
+
+    modalBody.innerHTML = `
+        <div class="restaurant-detail">
+            <h2>${restaurant.name}</h2>
+            <div class="detail-info">
+                <div class="info-item">
+                    <div class="info-label">Τοποθεσία</div>
+                    <div class="info-value">${restaurant.location}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Είδος Κουζίνας</div>
+                    <div class="info-value">${restaurant.cuisineType || 'N/A'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Τηλέφωνο</div>
+                    <div class="info-value">${restaurant.phoneNumber || 'N/A'}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Αξιολόγηση</div>
+                    <div class="info-value">${generateStars(restaurant.averageRating)} ${restaurant.averageRating.toFixed(1)}/5.0</div>
+                </div>
+            </div>
+            ${restaurant.description ? `<p><strong>Περιγραφή:</strong> ${restaurant.description}</p>` : ''}
+        </div>
+        <div class="reviews-section">
+            <h3>Κριτικές (${reviews.length})</h3>
+            ${reviewsHTML}
+            <p style="margin-top: 1.5rem; padding: 1rem; background: #f0f0f0; border-radius: 4px;">
+                <strong>Σημείωση:</strong> Για να προσθέσετε κριτική ή να δημιουργήσετε εστιατόριο, παρακαλώ <a href="index.html">συνδεθείτε</a>.
+            </p>
+        </div>
+    `;
+
+    modal.style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('restaurantModal').style.display = 'none';
+}
+
+function generateStars(rating) {
+    if (!rating) return '☆☆☆☆☆';
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    let stars = '';
+    for (let i = 0; i < fullStars; i++) stars += '★';
+    if (hasHalfStar && fullStars < 5) stars += '★';
+    for (let i = stars.length; i < 5; i++) stars += '☆';
+    return stars;
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('restaurantModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+}
+</script>
 
 </body>
 </html>

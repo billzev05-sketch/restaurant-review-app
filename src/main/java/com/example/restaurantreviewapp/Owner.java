@@ -18,5 +18,6 @@ public class Owner extends User {
         this.totalRestaurants = totalRestaurants;
     }
 
-
+    public int getTotalRestaurants() { return totalRestaurants; }
+    public void setTotalRestaurants(int totalRestaurants) { this.totalRestaurants = totalRestaurants; }
 }
