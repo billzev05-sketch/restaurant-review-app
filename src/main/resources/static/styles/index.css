@@ -1,0 +1,162 @@
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+
+    background-image: url('../assets/backgroundLogin.jpg');
+
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.login-container {
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+h2 {
+    margin-bottom: 24px;
+    color: #333333;
+}
+
+
+.role-selection {
+    display: flex;
+    justify-content: space-between;
+    gap: 5px;
+    margin-bottom: 24px;
+}
+
+.radio-label {
+    font-size: 14px;
+    color: #555555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+
+.input-group {
+    margin-bottom: 16px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+    border-color: #4a90e2;
+    outline: none;
+}
+
+
+button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-submit {
+    background-color: #4a90e2;
+    color: white;
+    margin-top: 8px;
+}
+
+.btn-submit:hover {
+    background-color: #357abd;
+}
+
+.btn-guest {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-guest:hover {
+    background-color: #5a6268;
+}
+
+
+.signup-text {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #666666;
+}
+
+#role-text {
+    color: #4a90e2;
+    font-weight: bold;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.divider {
+    margin: 20px 0;
+    color: #999999;
+    position: relative;
+}
+
+
+.form-header {
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+.back-arrow {
+    text-decoration: none;
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.back-arrow:hover {
+    color: #333333;
+}
+
+.btn-link-container {
+    text-decoration: none;
+    display: block;
+    margin-top: 20px;
+}
+
+.success-icon {
+    font-size: 48px;
+    color: #28a745;
+    margin-bottom: 15px;
+}
+
+.success-box p {
+    color: #555555;
+    font-size: 15px;
+    margin-bottom: 25px;
+}

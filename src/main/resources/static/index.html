@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Σύνδεση - Restaurant Review App</title>
+    <link rel="stylesheet" href="styles/index.css">
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Καλώς ορίσατε</h2>
+
+    <div id="error-banner" style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: none; font-size: 14px; font-weight: bold; text-align: center;">
+        Λάθος όνομα χρήστη ή κωδικός πρόσβασης!
+    </div>
+
+    <form action="/api/login" method="POST">
+        <div class="role-selection">
+            <label class="radio-label">
+                <input type="radio" name="role" value="critic" checked onclick="handleRoleChange('κριτής', false)">
+                Κριτής
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="role" value="owner" onclick="handleRoleChange('ιδιοκτήτης', false)">
+                Ιδιοκτήτης
+            </label>
+            <label class="radio-label">
+                <input type="radio" name="role" value="admin" onclick="handleRoleChange('', true)">
+                Διαχειριστής
+            </label>
+        </div>
+
+        <div class="input-group">
+            <input type="text" name="username" placeholder="Όνομα χρήστη (Username)" required>
+        </div>
+
+        <div class="input-group">
+            <input type="password" name="password" placeholder="Κωδικός πρόσβασης (Password)" required>
+        </div>
+
+        <button type="submit" class="btn-submit">Σύνδεση</button>
+    </form>
+
+    <p class="signup-text" id="signup-prompt">
+        Αν δεν έχετε λογαριασμό εγγραφείτε εδώ ως
+        <a href="signUpCritic.html" id="role-link" style="color: #4a90e2; font-weight: bold; text-decoration: underline;">κριτής</a>
+    </p>
+
+    <div class="divider">ή</div>
+
+    <button class="btn-guest">Συνέχεια ως απλός επισκέπτης</button>
+</div>
+
+<script>
+    if (window.location.search.includes('error=invalid_credentials')) {
+        document.getElementById('error-banner').style.display = 'block';
+    }
+
+    function handleRoleChange(roleName, isAdmin) {
+        const signupPrompt = document.getElementById('signup-prompt');
+        const roleLink = document.getElementById('role-link');
+
+        if (isAdmin) {
+            signupPrompt.style.display = 'none';
+        } else {
+            signupPrompt.style.display = 'block';
+            roleLink.innerText = roleName;
+
+            if (roleName === 'κριτής') {
+                roleLink.href = "signUpCritic.html";
+            } else {
+                roleLink.href = "signUpOwner.html";
+            }
+        }
+    }
+</script>
+
+</body>
+</html>

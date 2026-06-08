@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Εγγραφή Ιδιοκτήτη - Restaurant Review App</title>
+    <link rel="stylesheet" href="styles/index.css">
+</head>
+<body>
+
+<div class="login-container signup-container">
+    <div class="form-header">
+        <a href="index.html" class="back-arrow">&#8592; Πίσω</a>
+    </div>
+
+    <h2>Εγγραφή Ιδιοκτήτη</h2>
+
+    <div id="error-banner" style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: none; font-size: 14px; font-weight: bold; text-align: center;">
+        Το όνομα χρήστη χρησιμοποιείται ήδη!
+    </div>
+
+    <form action="/api/register/owner" method="POST">
+        <div class="input-group">
+            <input type="text" name="username" placeholder="Όνομα χρήστη (Username)" required>
+        </div>
+
+        <div class="input-group">
+            <input type="password" name="password" placeholder="Κωδικός πρόσβασης (Password)" required>
+        </div>
+
+        <div class="input-group">
+            <input type="text" name="firstName" placeholder="Όνομα" required>
+        </div>
+
+        <div class="input-group">
+            <input type="text" name="lastName" placeholder="Επώνυμο" required>
+        </div>
+
+        <button type="submit" class="btn-submit">Εγγραφή</button>
+    </form>
+</div>
+
+<script>
+    if (window.location.search.includes('error')) {
+        document.getElementById('error-banner').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
