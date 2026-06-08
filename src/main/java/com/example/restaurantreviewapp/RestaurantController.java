@@ -23,6 +23,9 @@ public class RestaurantController {
     @Autowired
     private ReviewRepository reviewRepository;
 
+    @Autowired
+    private StatisticsService statisticsService;
+
     // Get all restaurants ranked
     @GetMapping
     @ResponseBody
@@ -74,6 +77,10 @@ public class RestaurantController {
         }
 
         Restaurant saved = restaurantRepository.save(restaurant);
+        
+        // Update owner statistics
+        statisticsService.updateOwnerStatistics(ownerOpt.get());
+        
         return ResponseEntity.ok(formatRestaurant(saved));
     }
 
@@ -135,7 +142,12 @@ public class RestaurantController {
             return ResponseEntity.badRequest().body(Map.of("error", "Cannot delete restaurant with existing reviews"));
         }
 
+        Owner owner = restaurant.getOwner();
         restaurantRepository.delete(restaurant);
+        
+        // Update owner statistics
+        statisticsService.updateOwnerStatistics(owner);
+        
         return ResponseEntity.ok(Map.of("message", "Restaurant deleted successfully"));
     }
 

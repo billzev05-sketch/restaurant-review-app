@@ -49,7 +49,8 @@ public class LoginController {
                     session.setAttribute("role", "admin");
                     session.setAttribute("firstName", adminUser.getFirstName());
                     session.setAttribute("lastName", adminUser.getLastName());
-                    return "redirect:/dashboard.html";
+                    return "redirect:/dashboard.html?userId=" + adminUser.getId() + "&role=admin&username=" + adminUser.getUsername() + 
+                           "&firstName=" + adminUser.getFirstName() + "&lastName=" + adminUser.getLastName();
                 }
             }
             return "redirect:/index.html?error=invalid_credentials";
@@ -70,14 +71,16 @@ public class LoginController {
                     session.setAttribute("role", "critic");
                     session.setAttribute("firstName", user.getFirstName());
                     session.setAttribute("lastName", user.getLastName());
-                    return "redirect:/dashboard.html";
+                    return "redirect:/dashboard.html?userId=" + user.getId() + "&role=critic&username=" + user.getUsername() + 
+                           "&firstName=" + user.getFirstName() + "&lastName=" + user.getLastName();
                 } else if ("owner".equals(role) && user instanceof Owner) {
                     session.setAttribute("userId", user.getId());
                     session.setAttribute("username", user.getUsername());
                     session.setAttribute("role", "owner");
                     session.setAttribute("firstName", user.getFirstName());
                     session.setAttribute("lastName", user.getLastName());
-                    return "redirect:/dashboard.html";
+                    return "redirect:/dashboard.html?userId=" + user.getId() + "&role=owner&username=" + user.getUsername() + 
+                           "&firstName=" + user.getFirstName() + "&lastName=" + user.getLastName();
                 }
             }
         }

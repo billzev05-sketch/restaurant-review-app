@@ -23,6 +23,9 @@ public class ReviewController {
     @Autowired
     private RankingService rankingService;
 
+    @Autowired
+    private StatisticsService statisticsService;
+
     // Get all reviews for a restaurant
     @GetMapping("/restaurant/{restaurantId}")
     @ResponseBody
@@ -84,6 +87,9 @@ public class ReviewController {
 
         // Update restaurant rating
         rankingService.updateRestaurantRating(restaurant);
+        
+        // Update critic statistics
+        statisticsService.updateCriticStatistics(critic);
 
         return ResponseEntity.ok(formatReview(saved));
     }
@@ -146,10 +152,15 @@ public class ReviewController {
         }
 
         Restaurant restaurant = review.getRestaurant();
+        Critic critic = review.getCritic();
+        
         reviewRepository.delete(review);
 
         // Update restaurant rating
         rankingService.updateRestaurantRating(restaurant);
+        
+        // Update critic statistics
+        statisticsService.updateCriticStatistics(critic);
 
         return ResponseEntity.ok(Map.of("message", "Review deleted successfully"));
     }
