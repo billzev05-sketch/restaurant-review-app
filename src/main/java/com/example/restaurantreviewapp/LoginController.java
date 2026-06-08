@@ -5,6 +5,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import jakarta.servlet.http.HttpSession;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +33,7 @@ public class LoginController {
     public String handleLogin(@RequestParam String username,
                               @RequestParam String password,
                               @RequestParam String role,
+                              HttpSession session,
                               RedirectAttributes redirectAttributes) {
 
         if ("admin".equals(role)) {
@@ -42,7 +44,12 @@ public class LoginController {
                 String hashedInputPassword = hashPassword(password);
 
                 if (adminUser.getPassword().equals(hashedInputPassword)) {
-                    return "redirect:/mainPage.html";
+                    session.setAttribute("userId", adminUser.getId());
+                    session.setAttribute("username", adminUser.getUsername());
+                    session.setAttribute("role", "admin");
+                    session.setAttribute("firstName", adminUser.getFirstName());
+                    session.setAttribute("lastName", adminUser.getLastName());
+                    return "redirect:/dashboard.html";
                 }
             }
             return "redirect:/index.html?error=invalid_credentials";
@@ -58,9 +65,19 @@ public class LoginController {
             // password match
             if (user.getPassword().equals(hashedInputPassword)) {
                 if ("critic".equals(role) && user instanceof Critic) {
-                    return "redirect:/mainPage.html";
+                    session.setAttribute("userId", user.getId());
+                    session.setAttribute("username", user.getUsername());
+                    session.setAttribute("role", "critic");
+                    session.setAttribute("firstName", user.getFirstName());
+                    session.setAttribute("lastName", user.getLastName());
+                    return "redirect:/dashboard.html";
                 } else if ("owner".equals(role) && user instanceof Owner) {
-                    return "redirect:/mainPage.html";
+                    session.setAttribute("userId", user.getId());
+                    session.setAttribute("username", user.getUsername());
+                    session.setAttribute("role", "owner");
+                    session.setAttribute("firstName", user.getFirstName());
+                    session.setAttribute("lastName", user.getLastName());
+                    return "redirect:/dashboard.html";
                 }
             }
         }

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Restaurant Review App</title>
+    <link rel="stylesheet" href="styles/dashboard.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="navbar-container">
+        <div class="logo">🍽️ RestaurantReview</div>
+        <div class="nav-right">
+            <span id="user-info" style="margin-right: 20px;"></span>
+            <button onclick="logout()" class="btn-logout">Αποσύνδεση</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="menu-section">
+            <h3>Μενού</h3>
+            <button class="menu-item active" onclick="showSection('browse')">
+                🔍 Περιήγηση Εστιατορίων
+            </button>
+            <button class="menu-item" onclick="showSection('myRestaurants')" id="menu-myRestaurants" style="display:none;">
+                🏪 Τα Εστιατόριά μου
+            </button>
+            <button class="menu-item" onclick="showSection('createRestaurant')" id="menu-createRestaurant" style="display:none;">
+                ➕ Προσθήκη Εστιατορίου
+            </button>
+            <button class="menu-item" onclick="showSection('myReviews')" id="menu-myReviews" style="display:none;">
+                ⭐ Οι Κριτικές μου
+            </button>
+            <button class="menu-item" onclick="showSection('admin')" id="menu-admin" style="display:none;">
+                🔧 Admin Panel
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Browse Section -->
+        <section id="browse-section" class="section active">
+            <h2>Εστιατόρια με Κατάταξη</h2>
+            
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Αναζήτηση εστιατορίου ή τοποθεσίας..." 
+                       onkeyup="searchRestaurants()">
+                <button onclick="searchRestaurants()" class="btn-search">Αναζήτηση</button>
+            </div>
+
+            <div id="restaurants-list" class="restaurants-grid">
+                <!-- Restaurants will be loaded here -->
+                <p>Φόρτωση εστιατορίων...</p>
+            </div>
+        </section>
+
+        <!-- My Restaurants Section (Owner) -->
+        <section id="myRestaurants-section" class="section" style="display:none;">
+            <h2>Τα Εστιατόριά μου</h2>
+            <div id="my-restaurants-list" class="restaurants-grid">
+                <p>Φόρτωση εστιατορίων...</p>
+            </div>
+        </section>
+
+        <!-- Create Restaurant Section (Owner) -->
+        <section id="createRestaurant-section" class="section" style="display:none;">
+            <h2>Δημιουργία Νέου Εστιατορίου</h2>
+            <form id="createRestaurantForm" class="form-container">
+                <div class="form-group">
+                    <label>Όνομα Εστιατορίου</label>
+                    <input type="text" id="restName" required>
+                </div>
+                <div class="form-group">
+                    <label>Τοποθεσία</label>
+                    <input type="text" id="restLocation" required>
+                </div>
+                <div class="form-group">
+                    <label>Περιγραφή</label>
+                    <textarea id="restDescription" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Είδος Κουζίνας</label>
+                    <input type="text" id="restCuisine" placeholder="π.χ. Ελληνική, Ιταλική...">
+                </div>
+                <div class="form-group">
+                    <label>Τηλέφωνο</label>
+                    <input type="tel" id="restPhone">
+                </div>
+                <button type="submit" class="btn-submit">Δημιουργία Εστιατορίου</button>
+            </form>
+        </section>
+
+        <!-- My Reviews Section (Critic) -->
+        <section id="myReviews-section" class="section" style="display:none;">
+            <h2>Οι Κριτικές μου</h2>
+            <div id="my-reviews-list">
+                <p>Φόρτωση κριτικών...</p>
+            </div>
+        </section>
+
+        <!-- Admin Panel -->
+        <section id="admin-section" class="section" style="display:none;">
+            <h2>Admin Panel</h2>
+            <div class="admin-tabs">
+                <button class="admin-tab-btn active" onclick="showAdminTab('users')">Χρήστες</button>
+                <button class="admin-tab-btn" onclick="showAdminTab('restaurants')">Εστιατόρια</button>
+                <button class="admin-tab-btn" onclick="showAdminTab('reviews')">Κριτικές</button>
+            </div>
+            
+            <div id="admin-users" class="admin-tab-content active">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Όνομα</th>
+                            <th>Username</th>
+                            <th>Τύπος</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-users-list">
+                        <tr><td colspan="4">Φόρτωση...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="admin-restaurants" class="admin-tab-content" style="display:none;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Όνομα</th>
+                            <th>Τοποθεσία</th>
+                            <th>Αξιολόγηση</th>
+                            <th>Κριτικές</th>
+                            <th>Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-restaurants-list">
+                        <tr><td colspan="6">Φόρτωση...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="admin-reviews" class="admin-tab-content" style="display:none;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Εστιατόριο</th>
+                            <th>Κριτικός</th>
+                            <th>Αξιολόγηση</th>
+                            <th>Ημερομηνία</th>
+                            <th>Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-reviews-list">
+                        <tr><td colspan="6">Φόρτωση...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Restaurant Detail Modal -->
+<div id="restaurantModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script src="js/dashboard.js"></script>
+
+</body>
+</html>

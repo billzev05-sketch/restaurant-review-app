@@ -18,5 +18,6 @@ public class Critic extends User {
         this.totalReviews = totalReviews;
     }
 
-
+    public int getTotalReviews() { return totalReviews; }
+    public void setTotalReviews(int totalReviews) { this.totalReviews = totalReviews; }
 }
