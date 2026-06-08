@@ -54,21 +54,31 @@ function updateUIForRole(role) {
 }
 
 function showSection(sectionName) {
+    // 1. Κρύβουμε όλα τα sections
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
+
+    // 2. Αφαιρούμε το active από όλα τα κουμπιά του μενού
     document.querySelectorAll('.menu-item').forEach(item => {
         item.classList.remove('active');
     });
 
+    // 3. Εμφανίζουμε το σωστό section
     const sectionElement = document.getElementById(`${sectionName}-section`);
     if (sectionElement) {
         sectionElement.classList.add('active');
     }
 
-    event.target.classList.add('active');
+    // 4. Κάνουμε highlight το σωστό κουμπί με βάση το ID
+    const activeMenuItem = document.getElementById(`menu-${sectionName}`);
+    if (activeMenuItem) {
+        activeMenuItem.classList.add('active');
+    }
+
     currentSection = sectionName;
 
+    // 5. Φορτώνουμε τα δεδομένα αν χρειάζεται
     if (sectionName === 'myRestaurants') {
         loadMyRestaurants();
     } else if (sectionName === 'myReviews') {
@@ -218,20 +228,20 @@ function submitReview(restaurantId) {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: `restaurantId=${restaurantId}&criticId=${currentUser.id}&rating=${selectedRating}&reviewText=${encodeURIComponent(reviewText)}`
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.id) {
-            alert('Κριτική υποβλήθηκε με επιτυχία!');
-            closeModal();
-            showRestaurantDetail(restaurantId);
-        } else {
-            alert('Σφάλμα: ' + (data.error || 'Δεν ήταν δυνατή η υποβολή'));
-        }
-    })
-    .catch(error => {
-        console.error('Error submitting review:', error);
-        alert('Σφάλμα κατά την υποβολή της κριτικής');
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                alert('Κριτική υποβλήθηκε με επιτυχία!');
+                closeModal();
+                showRestaurantDetail(restaurantId);
+            } else {
+                alert('Σφάλμα: ' + (data.error || 'Δεν ήταν δυνατή η υποβολή'));
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting review:', error);
+            alert('Σφάλμα κατά την υποβολή της κριτικής');
+        });
 }
 
 function closeModal() {
@@ -257,19 +267,19 @@ function editRestaurant(restaurantId) {
 function deleteRestaurant(restaurantId) {
     if (confirm('Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το εστιατόριο;')) {
         fetch(`/api/restaurants/${restaurantId}?ownerId=${currentUser.id}`, {method: 'DELETE'})
-        .then(response => response.json())
-        .then(data => {
-            if (data.message) {
-                alert('Εστιατόριο διαγράφηκε με επιτυχία');
-                loadMyRestaurants();
-            } else {
-                alert('Σφάλμα: ' + (data.error || 'Δεν ήταν δυνατή η διαγραφή'));
-            }
-        })
-        .catch(error => {
-            console.error('Error deleting restaurant:', error);
-            alert('Σφάλμα κατά τη διαγραφή');
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert('Εστιατόριο διαγράφηκε με επιτυχία');
+                    loadMyRestaurants();
+                } else {
+                    alert('Σφάλμα: ' + (data.error || 'Δεν ήταν δυνατή η διαγραφή'));
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting restaurant:', error);
+                alert('Σφάλμα κατά τη διαγραφή');
+            });
     }
 }
 
@@ -288,20 +298,20 @@ function handleCreateRestaurant(e) {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: params
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.id) {
-            alert('Εστιατόριο δημιουργήθηκε με επιτυχία!');
-            document.getElementById('createRestaurantForm').reset();
-            showSection('myRestaurants');
-        } else {
-            alert('Σφάλμα: ' + (data.error || 'Δεν ήταν δυνατή η δημιουργία'));
-        }
-    })
-    .catch(error => {
-        console.error('Error creating restaurant:', error);
-        alert('Σφάλμα κατά τη δημιουργία του εστιατορίου');
-    });
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                alert('Εστιατόριο δημιουργήθηκε με επιτυχία!');
+                document.getElementById('createRestaurantForm').reset();
+                showSection('myRestaurants');
+            } else {
+                alert('Σφάλμα: ' + (data.error || 'Δεν ήταν δυνατή η δημιουργία'));
+            }
+        })
+        .catch(error => {
+            console.error('Error creating restaurant:', error);
+            alert('Σφάλμα κατά τη δημιουργία του εστιατορίου');
+        });
 }
 
 function loadMyReviews() {
@@ -399,24 +409,28 @@ function displayAdminReviews(reviews) {
 function adminDeleteRestaurant(restaurantId) {
     if (confirm('Είστε σίγουροι;')) {
         fetch(`/api/restaurants/${restaurantId}?ownerId=0`, {method: 'DELETE'})
-        .then(() => loadAdminRestaurants())
-        .catch(error => console.error('Error:', error));
+            .then(() => loadAdminRestaurants())
+            .catch(error => console.error('Error:', error));
     }
 }
 
 function adminDeleteReview(reviewId) {
     if (confirm('Είστε σίγουροι;')) {
         fetch(`/api/reviews/${reviewId}?userId=${currentUser.id}&userRole=admin`, {method: 'DELETE'})
-        .then(() => setTimeout(() => loadAdminReviews(), 500))
-        .catch(error => console.error('Error:', error));
+            .then(() => setTimeout(() => loadAdminReviews(), 500))
+            .catch(error => console.error('Error:', error));
     }
 }
 
 function showAdminTab(tabName) {
     document.querySelectorAll('.admin-tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`admin-${tabName}`).classList.add('active');
-    event.target.classList.add('active');
+
+    const tabContent = document.getElementById(`admin-${tabName}`);
+    if (tabContent) tabContent.classList.add('active');
+
+    const tabBtn = document.getElementById(`tab-btn-${tabName}`);
+    if (tabBtn) tabBtn.classList.add('active');
 }
 
 function logout() {
