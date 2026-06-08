@@ -437,7 +437,7 @@ function generateStars(rating) {
 
 window.onclick = function(event) {
     const modal = document.getElementById('restaurantModal');
-    if (event.target == modal) {
+    if (event.target === modal) {
         modal.style.display = 'none';
     }
 }
