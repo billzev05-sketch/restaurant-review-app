@@ -1,5 +1,6 @@
-package com.example.restaurantreviewapp;
+package com.example.restaurantreviewapp.Restaurant;
 
+import com.example.restaurantreviewapp.Owner.Owner;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 

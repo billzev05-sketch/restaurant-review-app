@@ -1,7 +1,10 @@
 package com.example.restaurantreviewapp;
 
+import com.example.restaurantreviewapp.Admin.Admin;
+import com.example.restaurantreviewapp.User.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -41,4 +44,8 @@ public class DataInitializer implements CommandLineRunner {
 
         System.out.println(">>Default administrators added to the database!");
     }
+
+
+
+
 }

@@ -1,4 +1,4 @@
-package com.example.restaurantreviewapp;
+package com.example.restaurantreviewapp.User;
 
 import jakarta.persistence.*;
 

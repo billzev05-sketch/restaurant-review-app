@@ -1,5 +1,6 @@
-package com.example.restaurantreviewapp;
+package com.example.restaurantreviewapp.Owner;
 
+import com.example.restaurantreviewapp.User.User;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 

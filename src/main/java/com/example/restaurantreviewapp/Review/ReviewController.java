@@ -1,5 +1,10 @@
-package com.example.restaurantreviewapp;
+package com.example.restaurantreviewapp.Review;
 
+import com.example.restaurantreviewapp.*;
+import com.example.restaurantreviewapp.Critic.Critic;
+import com.example.restaurantreviewapp.Critic.CriticRepository;
+import com.example.restaurantreviewapp.Restaurant.Restaurant;
+import com.example.restaurantreviewapp.Restaurant.RestaurantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -170,7 +175,7 @@ public class ReviewController {
     @ResponseBody
     public ResponseEntity<?> checkReview(@RequestParam Long restaurantId, @RequestParam Long criticId) {
         Optional<Restaurant> restaurantOpt = restaurantRepository.findById(restaurantId);
-        Optional<Critic> criticOpt = criticRepository.findById(criticId);
+        Optional<Critic> criticOpt =criticRepository.findById(criticId);
 
         if (!restaurantOpt.isPresent() || !criticOpt.isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Restaurant or Critic not found"));

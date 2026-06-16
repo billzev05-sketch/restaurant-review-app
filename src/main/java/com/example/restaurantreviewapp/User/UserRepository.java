@@ -1,5 +1,6 @@
-package com.example.restaurantreviewapp;
+package com.example.restaurantreviewapp.User;
 
+import com.example.restaurantreviewapp.User.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

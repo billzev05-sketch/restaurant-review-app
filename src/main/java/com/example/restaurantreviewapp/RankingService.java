@@ -1,5 +1,11 @@
 package com.example.restaurantreviewapp;
 
+import com.example.restaurantreviewapp.Critic.Critic;
+import com.example.restaurantreviewapp.Critic.CriticRepository;
+import com.example.restaurantreviewapp.Restaurant.Restaurant;
+import com.example.restaurantreviewapp.Restaurant.RestaurantRepository;
+import com.example.restaurantreviewapp.Review.Review;
+import com.example.restaurantreviewapp.Review.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.*;

@@ -1,5 +1,7 @@
-package com.example.restaurantreviewapp;
+package com.example.restaurantreviewapp.Review;
 
+import com.example.restaurantreviewapp.Critic.Critic;
+import com.example.restaurantreviewapp.Restaurant.Restaurant;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 

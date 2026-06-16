@@ -1,5 +1,9 @@
-package com.example.restaurantreviewapp;
+package com.example.restaurantreviewapp.Restaurant;
 
+import com.example.restaurantreviewapp.*;
+import com.example.restaurantreviewapp.Owner.Owner;
+import com.example.restaurantreviewapp.Owner.OwnerRepository;
+import com.example.restaurantreviewapp.Review.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -31,11 +35,20 @@ public class RestaurantController {
     @ResponseBody
     public ResponseEntity<?> getAllRestaurants(@RequestParam(required = false) String search) {
         List<Restaurant> restaurants;
+
         if (search != null && !search.isEmpty()) {
-            restaurants = restaurantRepository.searchByNameOrLocation(search);
+            // clean the word that user gave (π.χ. "Σουβλάκι" -> "σουβλακι")
+            String cleanSearch = normalizeString(search);
+
+            // take all restaurants and filter them in java with streams
+            restaurants = restaurantRepository.findAll().stream()
+                    .filter(r -> normalizeString(r.getName()).contains(cleanSearch)
+                            || normalizeString(r.getLocation()).contains(cleanSearch))
+                    .toList();
         } else {
             restaurants = rankingService.getRankedRestaurants();
         }
+
         return ResponseEntity.ok(formatRestaurantList(restaurants));
     }
 
@@ -89,12 +102,7 @@ public class RestaurantController {
     @ResponseBody
     public ResponseEntity<?> updateRestaurant(
             @PathVariable Long id,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) String location,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) String cuisineType,
-            @RequestParam(required = false) String phoneNumber,
-            @RequestParam Long ownerId) {
+            @RequestBody Map<String, Object> payload) {
 
         Optional<Restaurant> restaurantOpt = restaurantRepository.findById(id);
         if (!restaurantOpt.isPresent()) {
@@ -103,23 +111,29 @@ public class RestaurantController {
 
         Restaurant restaurant = restaurantOpt.get();
 
-        // Check authorization
+        // we read the ownerId from Json body
+        if (payload.get("ownerId") == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing ownerId"));
+        }
+        Long ownerId = Long.valueOf(payload.get("ownerId").toString());
+
+        //  we check if the connected user is owner
         if (!restaurant.getOwner().getId().equals(ownerId)) {
             return ResponseEntity.status(403).body(Map.of("error", "Not authorized to update this restaurant"));
         }
 
-        if (name != null) restaurant.setName(name);
-        if (location != null) restaurant.setLocation(location);
-        if (description != null) restaurant.setDescription(description);
-        if (cuisineType != null) restaurant.setCuisineType(cuisineType);
-        if (phoneNumber != null) restaurant.setPhoneNumber(phoneNumber);
+        // update fields if new ones were sent
+        if (payload.get("name") != null) restaurant.setName((String) payload.get("name"));
+        if (payload.get("location") != null) restaurant.setLocation((String) payload.get("location"));
+        if (payload.get("description") != null) restaurant.setDescription((String) payload.get("description"));
+        if (payload.get("cuisineType") != null) restaurant.setCuisineType((String) payload.get("cuisineType"));
+        if (payload.get("phoneNumber") != null) restaurant.setPhoneNumber((String) payload.get("phoneNumber"));
 
         restaurant.setUpdatedDate(java.time.LocalDateTime.now());
         Restaurant updated = restaurantRepository.save(restaurant);
 
         return ResponseEntity.ok(formatRestaurant(updated));
     }
-
     // Delete restaurant (Owner only, if no reviews)
     @DeleteMapping("/{id}")
     @ResponseBody
@@ -185,4 +199,31 @@ public class RestaurantController {
     private List<Map<String, Object>> formatRestaurantList(List<Restaurant> restaurants) {
         return restaurants.stream().map(this::formatRestaurant).toList();
     }
+
+
+    private String normalizeString(String input) {
+        if (input == null) return "";
+
+        // 1. Μετατροπή σε μικρά γράμματα
+        String normalized = input.toLowerCase();
+
+        // 2. Αντικατάσταση των τονισμένων ελληνικών χαρακτήρων με άτονους
+        normalized = normalized
+                .replace("ά", "α")
+                .replace("έ", "ε")
+                .replace("ή", "η")
+                .replace("ί", "ι")
+                .replace("ό", "ο")
+                .replace("ύ", "υ")
+                .replace("ώ", "ω")
+                .replace("ϊ", "ι")
+                .replace("ϋ", "υ")
+                .replace("ΐ", "ι")
+                .replace("ΰ", "υ");
+
+        return normalized.trim();
+    }
+
+
+
 }

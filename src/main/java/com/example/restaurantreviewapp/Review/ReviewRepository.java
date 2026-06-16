@@ -1,11 +1,16 @@
-package com.example.restaurantreviewapp;
+package com.example.restaurantreviewapp.Review;
 
+import com.example.restaurantreviewapp.Critic.Critic;
+import com.example.restaurantreviewapp.Restaurant.Restaurant;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     // Find all reviews for a restaurant
     List<Review> findByRestaurant(Restaurant restaurant);

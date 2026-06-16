@@ -1,5 +1,8 @@
-package com.example.restaurantreviewapp;
+package com.example.restaurantreviewapp.User;
 
+import com.example.restaurantreviewapp.Admin.Admin;
+import com.example.restaurantreviewapp.Critic.Critic;
+import com.example.restaurantreviewapp.Owner.Owner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
