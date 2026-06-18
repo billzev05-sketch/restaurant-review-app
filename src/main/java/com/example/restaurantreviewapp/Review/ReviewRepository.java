@@ -31,4 +31,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     // Get all reviews sorted by creation date (newest first)
     @Query("SELECT r FROM Review r WHERE r.restaurant = :restaurant ORDER BY r.createdDate DESC")
     List<Review> findByRestaurantOrderByNewest(@Param("restaurant") Restaurant restaurant);
+
+    long countByCritic(Critic critic);
 }

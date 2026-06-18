@@ -31,4 +31,6 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
     // Get all restaurants sorted by average rating (for ranking)
     @Query("SELECT r FROM Restaurant r ORDER BY r.averageRating DESC, r.reviewCount DESC")
     List<Restaurant> findAllSortedByRating();
+
+    long countByOwner(Owner owner);
 }

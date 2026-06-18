@@ -5,7 +5,9 @@ import com.example.restaurantreviewapp.Critic.Critic;
 import com.example.restaurantreviewapp.Owner.Owner;
 import com.example.restaurantreviewapp.User.User;
 import com.example.restaurantreviewapp.User.UserRepository;
+import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,10 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.servlet.http.HttpSession;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -26,17 +25,6 @@ public class LoginController {
 
     @Autowired
     private UserRepository userRepository;
-
-    // Hashing στο password για να δούμε αν ταιριάζει με κάποιο hashed της βάσης
-    private String hashPassword(String password) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error processing password", e);
-        }
-    }
 
     @PostMapping("/api/login")
     public String handleLogin(@RequestParam String username,
@@ -50,29 +38,27 @@ public class LoginController {
 
             if (userOpt.isPresent() && userOpt.get() instanceof Admin) {
                 User adminUser = userOpt.get();
-                String hashedInputPassword = hashPassword(password);
 
-                if (adminUser.getPassword().equals(hashedInputPassword)) {
+                // Χρήση BCrypt για ασφαλή έλεγχο
+                if (BCrypt.checkpw(password, adminUser.getPassword())) {
                     session.setAttribute("userId", adminUser.getId());
                     session.setAttribute("username", adminUser.getUsername());
                     session.setAttribute("role", "admin");
                     session.setAttribute("firstName", adminUser.getFirstName());
                     session.setAttribute("lastName", adminUser.getLastName());
-                    return "redirect:/dashboard.html" ;
+                    return "redirect:/dashboard.html";
                 }
             }
             return "redirect:/index.html?error=invalid_credentials";
         }
 
-
         Optional<User> userOpt = userRepository.findByUsername(username);
 
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            String hashedInputPassword = hashPassword(password);
 
-            // password match
-            if (user.getPassword().equals(hashedInputPassword)) {
+            // Χρήση BCrypt για ασφαλή έλεγχο
+            if (BCrypt.checkpw(password, user.getPassword())) {
                 if ("critic".equals(role) && user instanceof Critic) {
                     session.setAttribute("userId", user.getId());
                     session.setAttribute("username", user.getUsername());
@@ -91,19 +77,28 @@ public class LoginController {
             }
         }
 
-        // Σε περίπτωση που δεν έγινε Match με κάποιο συγκεκριμένο user
         return "redirect:/index.html?error=invalid_credentials";
     }
 
+    @PostMapping("/api/session/logout")
+    @ResponseBody
+    public ResponseEntity<?> logout(HttpSession session) {
+        session.invalidate(); // Σκοτώνει οριστικά το session
+        return ResponseEntity.ok(Map.of("message", "Αποσυνδεθήκατε επιτυχώς"));
+    }
 
     @GetMapping("/api/session/user")
     @ResponseBody
-    public Map<String, Object> getSessionUser(HttpSession session) {
+    public ResponseEntity<Map<String, Object>> getSessionUser(HttpSession session) {
         Map<String, Object> userDetails = new HashMap<>();
 
         if (session.getAttribute("userId") == null) {
             userDetails.put("loggedIn", false);
-            return userDetails;
+            return ResponseEntity.ok()
+                    .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                    .header("Pragma", "no-cache")
+                    .header("Expires", "0")
+                    .body(userDetails);
         }
 
         userDetails.put("loggedIn", true);
@@ -113,8 +108,10 @@ public class LoginController {
         userDetails.put("firstName", session.getAttribute("firstName"));
         userDetails.put("lastName", session.getAttribute("lastName"));
 
-        return userDetails;
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(userDetails);
     }
 }
-
-

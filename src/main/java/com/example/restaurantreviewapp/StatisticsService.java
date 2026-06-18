@@ -24,20 +24,16 @@ public class StatisticsService {
     @Autowired
     private RestaurantRepository restaurantRepository;
 
-    /**
-     * Update critic's total review count
-     */
     public void updateCriticStatistics(Critic critic) {
-        long reviewCount = reviewRepository.findByCritic(critic).size();
+        // Χρήση της σωστής μεθόδου count (επιστρέφει απλά έναν αριθμό)
+        long reviewCount = reviewRepository.countByCritic(critic);
         critic.setTotalReviews((int) reviewCount);
         criticRepository.save(critic);
     }
 
-    /**
-     * Update owner's total restaurant count
-     */
     public void updateOwnerStatistics(Owner owner) {
-        long restaurantCount = restaurantRepository.findByOwner(owner).size();
+        // Χρήση της σωστής μεθόδου count
+        long restaurantCount = restaurantRepository.countByOwner(owner);
         owner.setTotalRestaurants((int) restaurantCount);
         ownerRepository.save(owner);
     }

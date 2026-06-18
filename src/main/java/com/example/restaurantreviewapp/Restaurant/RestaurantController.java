@@ -4,6 +4,7 @@ import com.example.restaurantreviewapp.*;
 import com.example.restaurantreviewapp.Owner.Owner;
 import com.example.restaurantreviewapp.Owner.OwnerRepository;
 import com.example.restaurantreviewapp.Review.ReviewRepository;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -30,17 +31,13 @@ public class RestaurantController {
     @Autowired
     private StatisticsService statisticsService;
 
-    // Get all restaurants ranked
     @GetMapping
     @ResponseBody
     public ResponseEntity<?> getAllRestaurants(@RequestParam(required = false) String search) {
         List<Restaurant> restaurants;
 
         if (search != null && !search.isEmpty()) {
-            // clean the word that user gave (π.χ. "Σουβλάκι" -> "σουβλακι")
             String cleanSearch = normalizeString(search);
-
-            // take all restaurants and filter them in java with streams
             restaurants = restaurantRepository.findAll().stream()
                     .filter(r -> normalizeString(r.getName()).contains(cleanSearch)
                             || normalizeString(r.getLocation()).contains(cleanSearch))
@@ -52,7 +49,6 @@ public class RestaurantController {
         return ResponseEntity.ok(formatRestaurantList(restaurants));
     }
 
-    // Get restaurant by ID
     @GetMapping("/{id}")
     @ResponseBody
     public ResponseEntity<?> getRestaurantById(@PathVariable Long id) {
@@ -63,25 +59,36 @@ public class RestaurantController {
         return ResponseEntity.notFound().build();
     }
 
-    // Create new restaurant (Owner only)
     @PostMapping("/create")
     @ResponseBody
     public ResponseEntity<?> createRestaurant(
-            @RequestParam String name,
-            @RequestParam String location,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) String cuisineType,
-            @RequestParam(required = false) String phoneNumber,
-            @RequestParam Long ownerId) {
+            @RequestBody Map<String, Object> payload,
+            HttpSession session) {
 
-        Optional<Owner> ownerOpt = ownerRepository.findById(ownerId);
-        if (!ownerOpt.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Owner not found"));
+        Long sessionUserId = (Long) session.getAttribute("userId");
+        String sessionRole = (String) session.getAttribute("role");
+
+        if (sessionUserId == null || !"owner".equals(sessionRole)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Μόνο ιδιοκτήτες μπορούν να δημιουργήσουν εστιατόριο."));
         }
 
-        // Check if restaurant name already exists
+        String name = (String) payload.get("name");
+        String location = (String) payload.get("location");
+        String description = (String) payload.get("description");
+        String cuisineType = (String) payload.get("cuisineType");
+        String phoneNumber = (String) payload.get("phoneNumber");
+
+        if (name == null || name.trim().isEmpty() || location == null || location.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Το όνομα και η τοποθεσία είναι υποχρεωτικά."));
+        }
+
+        Optional<Owner> ownerOpt = ownerRepository.findById(sessionUserId);
+        if (!ownerOpt.isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Ο ιδιοκτήτης δεν βρέθηκε."));
+        }
+
         if (restaurantRepository.findByName(name).isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Restaurant name already exists"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Το όνομα του εστιατορίου υπάρχει ήδη."));
         }
 
         Restaurant restaurant = new Restaurant(name, location, description, cuisineType, ownerOpt.get());
@@ -90,19 +97,24 @@ public class RestaurantController {
         }
 
         Restaurant saved = restaurantRepository.save(restaurant);
-        
-        // Update owner statistics
         statisticsService.updateOwnerStatistics(ownerOpt.get());
-        
+
         return ResponseEntity.ok(formatRestaurant(saved));
     }
 
-    // Update restaurant (Owner only)
     @PutMapping("/{id}")
     @ResponseBody
     public ResponseEntity<?> updateRestaurant(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> payload) {
+            @RequestBody Map<String, Object> payload,
+            HttpSession session) {
+
+        Long sessionUserId = (Long) session.getAttribute("userId");
+        String sessionRole = (String) session.getAttribute("role");
+
+        if (sessionUserId == null || !"owner".equals(sessionRole)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Μη εξουσιοδοτημένη πρόσβαση."));
+        }
 
         Optional<Restaurant> restaurantOpt = restaurantRepository.findById(id);
         if (!restaurantOpt.isPresent()) {
@@ -111,18 +123,10 @@ public class RestaurantController {
 
         Restaurant restaurant = restaurantOpt.get();
 
-        // we read the ownerId from Json body
-        if (payload.get("ownerId") == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Missing ownerId"));
-        }
-        Long ownerId = Long.valueOf(payload.get("ownerId").toString());
-
-        //  we check if the connected user is owner
-        if (!restaurant.getOwner().getId().equals(ownerId)) {
-            return ResponseEntity.status(403).body(Map.of("error", "Not authorized to update this restaurant"));
+        if (!restaurant.getOwner().getId().equals(sessionUserId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Δεν έχετε δικαίωμα επεξεργασίας σε αυτό το εστιατόριο."));
         }
 
-        // update fields if new ones were sent
         if (payload.get("name") != null) restaurant.setName((String) payload.get("name"));
         if (payload.get("location") != null) restaurant.setLocation((String) payload.get("location"));
         if (payload.get("description") != null) restaurant.setDescription((String) payload.get("description"));
@@ -134,10 +138,18 @@ public class RestaurantController {
 
         return ResponseEntity.ok(formatRestaurant(updated));
     }
-    // Delete restaurant (Owner only, if no reviews)
+
     @DeleteMapping("/{id}")
     @ResponseBody
-    public ResponseEntity<?> deleteRestaurant(@PathVariable Long id, @RequestParam Long ownerId) {
+    public ResponseEntity<?> deleteRestaurant(@PathVariable Long id, HttpSession session) {
+
+        Long sessionUserId = (Long) session.getAttribute("userId");
+        String sessionRole = (String) session.getAttribute("role");
+
+        if (sessionUserId == null || (!"owner".equals(sessionRole) && !"admin".equals(sessionRole))) {
+            return ResponseEntity.status(401).body(Map.of("error", "Μη εξουσιοδοτημένη πρόσβαση."));
+        }
+
         Optional<Restaurant> restaurantOpt = restaurantRepository.findById(id);
         if (!restaurantOpt.isPresent()) {
             return ResponseEntity.notFound().build();
@@ -145,27 +157,22 @@ public class RestaurantController {
 
         Restaurant restaurant = restaurantOpt.get();
 
-        // Check authorization
-        if (!restaurant.getOwner().getId().equals(ownerId)) {
-            return ResponseEntity.status(403).body(Map.of("error", "Not authorized to delete this restaurant"));
+        if (!"admin".equals(sessionRole) && !restaurant.getOwner().getId().equals(sessionUserId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Δεν έχετε δικαίωμα διαγραφής αυτού του εστιατορίου."));
         }
 
-        // Check if restaurant has reviews
         long reviewCount = reviewRepository.countByRestaurant(restaurant);
         if (reviewCount > 0) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Cannot delete restaurant with existing reviews"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Δεν μπορείτε να διαγράψετε εστιατόριο που έχει κριτικές."));
         }
 
         Owner owner = restaurant.getOwner();
         restaurantRepository.delete(restaurant);
-        
-        // Update owner statistics
         statisticsService.updateOwnerStatistics(owner);
-        
-        return ResponseEntity.ok(Map.of("message", "Restaurant deleted successfully"));
+
+        return ResponseEntity.ok(Map.of("message", "Το εστιατόριο διαγράφηκε με επιτυχία."));
     }
 
-    // Get restaurants by owner
     @GetMapping("/owner/{ownerId}")
     @ResponseBody
     public ResponseEntity<?> getRestaurantsByOwner(@PathVariable Long ownerId) {
@@ -178,7 +185,6 @@ public class RestaurantController {
         return ResponseEntity.ok(formatRestaurantList(restaurants));
     }
 
-    // Helper methods
     private Map<String, Object> formatRestaurant(Restaurant restaurant) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", restaurant.getId());
@@ -200,30 +206,14 @@ public class RestaurantController {
         return restaurants.stream().map(this::formatRestaurant).toList();
     }
 
-
     private String normalizeString(String input) {
         if (input == null) return "";
-
-        // 1. Μετατροπή σε μικρά γράμματα
         String normalized = input.toLowerCase();
-
-        // 2. Αντικατάσταση των τονισμένων ελληνικών χαρακτήρων με άτονους
         normalized = normalized
-                .replace("ά", "α")
-                .replace("έ", "ε")
-                .replace("ή", "η")
-                .replace("ί", "ι")
-                .replace("ό", "ο")
-                .replace("ύ", "υ")
-                .replace("ώ", "ω")
-                .replace("ϊ", "ι")
-                .replace("ϋ", "υ")
-                .replace("ΐ", "ι")
-                .replace("ΰ", "υ");
-
+                .replace("ά", "α").replace("έ", "ε").replace("ή", "η")
+                .replace("ί", "ι").replace("ό", "ο").replace("ύ", "υ")
+                .replace("ώ", "ω").replace("ϊ", "ι").replace("ϋ", "υ")
+                .replace("ΐ", "ι").replace("ΰ", "υ");
         return normalized.trim();
     }
-
-
-
 }

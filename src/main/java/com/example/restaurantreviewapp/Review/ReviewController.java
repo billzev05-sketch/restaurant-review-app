@@ -5,6 +5,7 @@ import com.example.restaurantreviewapp.Critic.Critic;
 import com.example.restaurantreviewapp.Critic.CriticRepository;
 import com.example.restaurantreviewapp.Restaurant.Restaurant;
 import com.example.restaurantreviewapp.Restaurant.RestaurantRepository;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -31,7 +32,6 @@ public class ReviewController {
     @Autowired
     private StatisticsService statisticsService;
 
-    // Get all reviews for a restaurant
     @GetMapping("/restaurant/{restaurantId}")
     @ResponseBody
     public ResponseEntity<?> getRestaurantReviews(@PathVariable Long restaurantId) {
@@ -44,7 +44,6 @@ public class ReviewController {
         return ResponseEntity.ok(formatReviewList(reviews));
     }
 
-    // Get all reviews by a critic
     @GetMapping("/critic/{criticId}")
     @ResponseBody
     public ResponseEntity<?> getCriticReviews(@PathVariable Long criticId) {
@@ -57,56 +56,67 @@ public class ReviewController {
         return ResponseEntity.ok(formatReviewList(reviews));
     }
 
-    // Submit a new review
     @PostMapping("/create")
     @ResponseBody
     public ResponseEntity<?> createReview(
-            @RequestParam Long restaurantId,
-            @RequestParam Long criticId,
-            @RequestParam Integer rating,
-            @RequestParam(required = false) String reviewText) {
+            @RequestBody Map<String, Object> payload,
+            HttpSession session) {
 
-        // Validate rating
+        Long sessionUserId = (Long) session.getAttribute("userId");
+        String sessionRole = (String) session.getAttribute("role");
+
+        if (sessionUserId == null || !"critic".equals(sessionRole)) {
+            return ResponseEntity.status(401).body(Map.of("error", "Μόνο κριτικοί μπορούν να υποβάλουν κριτική."));
+        }
+
+        if (payload.get("restaurantId") == null || payload.get("rating") == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Λείπουν υποχρεωτικά πεδία."));
+        }
+
+        Long restaurantId = Long.valueOf(payload.get("restaurantId").toString());
+        Integer rating = Integer.valueOf(payload.get("rating").toString());
+        String reviewText = payload.get("reviewText") != null ? (String) payload.get("reviewText") : null;
+
         if (rating < 1 || rating > 5) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Rating must be between 1 and 5"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Το rating πρέπει να είναι από 1 έως 5."));
         }
 
         Optional<Restaurant> restaurantOpt = restaurantRepository.findById(restaurantId);
-        Optional<Critic> criticOpt = criticRepository.findById(criticId);
+        Optional<Critic> criticOpt = criticRepository.findById(sessionUserId);
 
         if (!restaurantOpt.isPresent() || !criticOpt.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Restaurant or Critic not found"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Το εστιατόριο ή ο κριτικός δεν βρέθηκαν."));
         }
 
         Restaurant restaurant = restaurantOpt.get();
         Critic critic = criticOpt.get();
 
-        // Check if critic already reviewed this restaurant
         Optional<Review> existingReview = reviewRepository.findByRestaurantAndCritic(restaurant, critic);
         if (existingReview.isPresent()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "You have already reviewed this restaurant"));
+            return ResponseEntity.badRequest().body(Map.of("error", "Έχετε ήδη αξιολογήσει αυτό το εστιατόριο."));
         }
 
         Review review = new Review(restaurant, critic, rating, reviewText);
         Review saved = reviewRepository.save(review);
 
-        // Update restaurant rating
         rankingService.updateRestaurantRating(restaurant);
-        
-        // Update critic statistics
         statisticsService.updateCriticStatistics(critic);
 
         return ResponseEntity.ok(formatReview(saved));
     }
 
-    // Update a review
     @PutMapping("/{id}")
     @ResponseBody
     public ResponseEntity<?> updateReview(
             @PathVariable Long id,
-            @RequestParam Long criticId,
-            @RequestParam(required = false) Integer rating,
-            @RequestParam(required = false) String reviewText) {
+            @RequestBody Map<String, Object> payload,
+            HttpSession session) {
+
+        Long sessionUserId = (Long) session.getAttribute("userId");
+
+        if (sessionUserId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Μη εξουσιοδοτημένη πρόσβαση."));
+        }
 
         Optional<Review> reviewOpt = reviewRepository.findById(id);
         if (!reviewOpt.isPresent()) {
@@ -115,35 +125,41 @@ public class ReviewController {
 
         Review review = reviewOpt.get();
 
-        // Check authorization
-        if (!review.getCritic().getId().equals(criticId)) {
-            return ResponseEntity.status(403).body(Map.of("error", "Not authorized to update this review"));
+        if (!review.getCritic().getId().equals(sessionUserId)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Δεν έχετε δικαίωμα να επεξεργαστείτε αυτή την κριτική."));
         }
 
-        if (rating != null) {
+        if (payload.get("rating") != null) {
+            Integer rating = Integer.valueOf(payload.get("rating").toString());
             if (rating < 1 || rating > 5) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Rating must be between 1 and 5"));
             }
             review.setRating(rating);
         }
 
-        if (reviewText != null) {
-            review.setReviewText(reviewText);
+        if (payload.get("reviewText") != null) {
+            review.setReviewText((String) payload.get("reviewText"));
         }
 
         review.setUpdatedDate(java.time.LocalDateTime.now());
         Review updated = reviewRepository.save(review);
 
-        // Update restaurant rating
         rankingService.updateRestaurantRating(review.getRestaurant());
 
         return ResponseEntity.ok(formatReview(updated));
     }
 
-    // Delete a review
     @DeleteMapping("/{id}")
     @ResponseBody
-    public ResponseEntity<?> deleteReview(@PathVariable Long id, @RequestParam Long userId, @RequestParam String userRole) {
+    public ResponseEntity<?> deleteReview(@PathVariable Long id, HttpSession session) {
+
+        Long sessionUserId = (Long) session.getAttribute("userId");
+        String sessionRole = (String) session.getAttribute("role");
+
+        if (sessionUserId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Πρέπει να συνδεθείτε."));
+        }
+
         Optional<Review> reviewOpt = reviewRepository.findById(id);
         if (!reviewOpt.isPresent()) {
             return ResponseEntity.notFound().build();
@@ -151,31 +167,29 @@ public class ReviewController {
 
         Review review = reviewOpt.get();
 
-        // Check authorization (critic who wrote it, or admin)
-        if (!"admin".equals(userRole) && !review.getCritic().getId().equals(userId)) {
-            return ResponseEntity.status(403).body(Map.of("error", "Not authorized to delete this review"));
+        boolean isAdmin = "admin".equals(sessionRole);
+        boolean isAuthor = review.getCritic().getId().equals(sessionUserId);
+
+        if (!isAdmin && !isAuthor) {
+            return ResponseEntity.status(403).body(Map.of("error", "Δεν έχετε δικαίωμα διαγραφής αυτής της κριτικής."));
         }
 
         Restaurant restaurant = review.getRestaurant();
         Critic critic = review.getCritic();
-        
+
         reviewRepository.delete(review);
 
-        // Update restaurant rating
         rankingService.updateRestaurantRating(restaurant);
-        
-        // Update critic statistics
         statisticsService.updateCriticStatistics(critic);
 
-        return ResponseEntity.ok(Map.of("message", "Review deleted successfully"));
+        return ResponseEntity.ok(Map.of("message", "Η κριτική διαγράφηκε με επιτυχία"));
     }
 
-    // Check if critic has reviewed restaurant
     @GetMapping("/check")
     @ResponseBody
     public ResponseEntity<?> checkReview(@RequestParam Long restaurantId, @RequestParam Long criticId) {
         Optional<Restaurant> restaurantOpt = restaurantRepository.findById(restaurantId);
-        Optional<Critic> criticOpt =criticRepository.findById(criticId);
+        Optional<Critic> criticOpt = criticRepository.findById(criticId);
 
         if (!restaurantOpt.isPresent() || !criticOpt.isPresent()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Restaurant or Critic not found"));
@@ -189,7 +203,6 @@ public class ReviewController {
         return ResponseEntity.ok(Map.of("hasReviewed", false));
     }
 
-    // Helper methods
     private Map<String, Object> formatReview(Review review) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", review.getId());
