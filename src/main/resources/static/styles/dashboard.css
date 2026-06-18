@@ -249,6 +249,7 @@ body {
     font-size: 0.85rem;
     cursor: pointer;
     font-weight: bold;
+    color: white;
 }
 
 .btn-view {
@@ -262,7 +263,6 @@ body {
 
 .btn-edit {
     background-color: var(--warning-color);
-    color: black;
 }
 
 .btn-edit:hover {
