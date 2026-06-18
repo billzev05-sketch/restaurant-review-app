@@ -34,15 +34,15 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.findByUsername("admin1").isEmpty()) {
             Admin admin1 = new Admin("admin1", hashPassword("123"), "System", "Admin");
             userRepository.save(admin1);
+            System.out.println(">>Default administrator 1 added to the database!");
         }
 
 
         if (userRepository.findByUsername("admin2").isEmpty()) {
             Admin admin2 = new Admin("admin2", hashPassword("password456"), "George", "Manager");
             userRepository.save(admin2);
+            System.out.println(">>Default administrator 2 added to the database!");
         }
-
-        System.out.println(">>Default administrators added to the database!");
     }
 
 
