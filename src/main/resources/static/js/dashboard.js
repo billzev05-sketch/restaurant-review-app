@@ -430,6 +430,10 @@ function loadMyReviews() {
                         <span style="color: #999; font-size: 0.9rem;">${new Date(review.createdDate).toLocaleDateString('el-GR')}</span>
                     </div>
                     ${review.reviewText ? `<p>${escapeHTML(review.reviewText)}</p>` : ''}
+                    <div class="review-actions">
+                        <button onclick="editReview(${review.id}, ${review.rating})">Edit</button>
+                        <button onclick="deleteReview(${review.id})">Delete</button>
+                    </div>
                 </div>
             `).join('');
         })
@@ -439,6 +443,51 @@ function loadMyReviews() {
             if (container) container.innerHTML = '<p>Σφάλμα κατά την φόρτωση</p>';
         });
 }
+
+function deleteReview(id) {
+    if (confirm("Θέλετε σίγουρα να διαγράψετε την κριτική;")) {
+        fetch(`/api/reviews/${id}`, { method: 'DELETE' })
+            .then(response => {
+                if (response.ok) {
+                    alert("Η κριτική διαγράφηκε!");
+                    loadMyReviews(); // Reload the list automatically
+                } else {
+                    alert("Δεν ήταν δυνατή η διαγραφή.");
+                }
+            });
+    }
+}
+
+function editReview(id, currentRating) {
+    const reviewItem = event.target.closest('.review-item');
+    const textElement = reviewItem.querySelector('p');
+    const currentText = textElement ? textElement.innerText : "";
+
+    reviewItem.innerHTML = `
+        <div class="edit-form" style="padding: 10px; border: 1px solid #eee;">
+            <label>Rating (Click to set): </label>
+            <div id="star-picker-${id}" style="cursor: pointer; font-size: 1.5rem; color: gold;">
+                <span onclick="setRating(${id}, 1)">${currentRating >= 1 ? '★' : '☆'}</span>
+                <span onclick="setRating(${id}, 2)">${currentRating >= 2 ? '★' : '☆'}</span>
+                <span onclick="setRating(${id}, 3)">${currentRating >= 3 ? '★' : '☆'}</span>
+                <span onclick="setRating(${id}, 4)">${currentRating >= 4 ? '★' : '☆'}</span>
+                <span onclick="setRating(${id}, 5)">${currentRating >= 5 ? '★' : '☆'}</span>
+            </div>
+            <input type="hidden" id="edit-rating-${id}" value="${currentRating}">
+            
+            <br>
+            <label style="display:block; margin-top:10px;">Review Text:</label>
+            <textarea id="edit-text-${id}" style="width: 100%; height: 80px;">${currentText}</textarea>
+            
+            <div style="margin-top: 10px;">
+                <button onclick="saveReview(${id})">Save Changes</button>
+                <button onclick="location.reload()">Cancel</button>
+            </div>
+        </div>
+    `;
+}
+
+
 
 function loadAdminData() {
     loadAdminUsers();
